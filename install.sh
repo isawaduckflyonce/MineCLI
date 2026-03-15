@@ -38,7 +38,10 @@ function install_java() {
     case "$choice" in
       y|Y )
         grn "Installing..."
-        sudo apt install openjdk-8-jre -y > /dev/null 2>&1 || ( echo "Installation failed, exiting." && exit 1 )
+        sudo apt install openjdk-8-jre -y > /dev/null 2>&1 || {
+          echo "Installation failed, exiting."
+          exit 1
+        }
         break
         ;;
       n|N )
@@ -100,7 +103,7 @@ function set_env_var() {
 function select_type() {
   echo "Please choose the type of server you'd like to install:"
   echo " [1] Vanilla server * (Standard Minecraft experience)"
-  echo " [2] Optifine server (Optimized for performance and graphics)"
+  echo " [2] OptiFine server (Optimized for performance and graphics)"
   echo " [3] Forge server (For mods and custom content)"
   echo " [4] Custom server (Advanced users with custom setup)"
   echo " [5] Skip server download (If you already have a server jar file)"
@@ -117,8 +120,8 @@ function select_type() {
         break
         ;;
       2 )
-        grn "You selected the Optifine server."
-        MC_SERVER="Optifine"
+        grn "You selected the OptiFine server."
+        MC_SERVER="OptiFine"
         break
         ;;
       3 )
@@ -143,35 +146,10 @@ function select_type() {
   done
 }
 
-# Select minecraft version
-function check_version() {
-  local major="$1"
-  local minor="$2"
-
-  if [ -n "$minor" ]; then
-    local input="1.${major}.${minor}"
-  else
-    local input="1.${major}"
-  fi
-
-  # Check if version exists by matching full version or major version
-  found="false"
-  echo "$VERSIONS" | grep -E " $input " > /dev/null && found="true"
-  [[ $found = "false" ]] && echo "$VERSIONS_EXTRA" | grep -E " $input " > /dev/null && found="true"
-
-  if [[ $found = "true" ]] > /dev/null; then
-    echo "Version $input found."
-    return 0
-  else
-    echo "Version $input not found."
-    return 1
-  fi
-}
-
 # Select a valid version
 function list_servers() {
   local servers
-  servers="$(dirname "${BASH_SOURCE[0]}")/Servers"
+  servers="$(dirname "${BASH_SOURCE[0]}")/data/Servers"
 
   [[ -d "$servers" ]] || {
     red "Servers directory was not found, aborting."
@@ -187,7 +165,7 @@ function list_servers() {
   local i=0
   for version in $(printf '%s\n' "$servers/$1"/*.jar | sort -V); do
     i=$((i + 1))
-    echo " [$i] $(basename -s .jar "$version")"
+    printf " [%2d] %s - %s\n" "$i" "$MC_SERVER" "$(basename -s .jar "$version")"
 
     # Save paths to tempfile
     echo "$version" >> "$2"
@@ -195,6 +173,7 @@ function list_servers() {
   shopt -u nullglob
 }
 
+# Select a server from the server list
 function select_server() {
   local max
   max=$( wc -l < "$1" )
@@ -221,17 +200,24 @@ function select_server() {
 }
 
 function select_version() {
+  local TMPFILE
   TMPFILE=$( mktemp )
 
   echo -e "\nAvailable $MC_SERVER server versions:"
   case "$MC_SERVER" in
     "Vanilla")
-      # Listing files
       list_servers "Vanilla" "$TMPFILE"
-
-      # Selecting server file
       select_server "$TMPFILE"
       ;;
+    "Forge")
+      list_servers "Forge" "$TMPFILE"
+      select_server "$TMPFILE"
+      ;;
+    "OptiFine")
+      list_servers "OptiFine" "$TMPFILE"
+      select_server "$TMPFILE"
+      ;;
+    # TODO: Handle custom server files
   esac
 
   rm -f "$TMPFILE"
@@ -263,7 +249,7 @@ echo "        Java installer"
 grn  "=============================="
 echo "Checking for Java..."
 
-if which java > /dev/null 2>&1; then
+if command -v java >/dev/null 2>&1; then
   grn "There is a java installation on your system."
   echo "Checking for java 8..."
 
@@ -286,6 +272,7 @@ grn "Java 8 has been successfully installed and environment variables are set!\n
 grn  "================================"
 echo "        Server installer"
 grn  "================================"
+
 select_type
 select_version
 

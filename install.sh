@@ -1,5 +1,27 @@
 #!/bin/bash
 
+#Minecraft versions
+versions="\
+  1.0.0 1.0.1\
+  1.1.0\
+  1.2.1 1.2.2 1.2.3 1.2.4 1.2.5\
+  1.3.1 1.3.2\
+  1.4.2 1.4.4 1.4.5 1.4.6 1.4.7\
+  1.5 1.5.1 1.5.2\
+  1.6.1 1.6.2 1.6.4\
+  1.7.2 1.7.4 1.7.5 1.7.6 1.7.7 1.7.8 1.7.9 1.7.10\
+  1.8 1.8.1 1.8.2 1.8.3 1.8.4 1.8.5 1.8.6 1.8.7 1.8.8 1.8.9\
+  1.9 1.9.1 1.9.2 1.9.3 1.9.4\
+  1.10 1.10.1 1.10.2\
+  1.11 1.11.1 1.11.2\
+  1.12 1.12.1 1.12.2 "
+
+versions_extra="\
+  1.13 1.13.1 1.13.2\
+  1.14 1.14.1 1.14.2 1.14.3 1.14.4\
+  1.15 1.15.1 1.15.2\
+  1.16 1.16.1 1.16.2 1.16.3 1.16.4 1.16.5 "
+
 # Colored output
 RED='\033[0;31m'
 GRN='\033[0;32m'
@@ -90,14 +112,48 @@ function set_env_var() {
 }
 
 # Select minecraft version
+function check_version() {
+  local major="$1"
+  local minor="$2"
+
+  if [ -n "$minor" ]; then
+    local input="1.${major}.${minor}"
+  else
+    local input="1.${major}"
+  fi
+
+  # Check if version exists by matching full version or major version
+  found="false"
+  echo "$versions" | grep -E " $input " > /dev/null && found="true"
+  [[ $found = "false" ]] && echo "$versions_extra" | grep -E " $input " > /dev/null && found="true"
+
+  if [[ $found = "true" ]] > /dev/null; then
+    echo "Version $input found."
+    return 0
+  else
+    echo "Version $input not found."
+    return 1
+  fi
+}
+
+# Select a valid version
 function select_version() {
   while true; do
     read -rp "Select the Minecraft version [1.0 - 1.16]: " version
+
     if [[ $version =~ ^1\.([0-9]+)(\.[0-9]+)?$ ]]; then
       major=$(echo "$version" | cut -d. -f2)
+      minor=$(echo "$version" | cut -d. -f3)
+
+      # Check if version exists
+      if ! check_version "$major" "$minor"; then
+        continue
+      fi
+
       if (( major > 12 )); then
         ylw "Versions above 1.12 are not necessarily supported by Mine-CLI."
         echo "Recommended versions: 1.7 – 1.12"
+
         while true; do
           read -rp "Continue anyway? [y/N]: " choice
           choice=${choice:-N}
@@ -122,7 +178,7 @@ function select_version() {
         break
       fi
     else
-      red "Invalid version format. Example: 1.12.2"
+      red "Invalid version format. Example: 1.12.2, 1.9, 1.0.0"
     fi
   done
 }
@@ -142,9 +198,9 @@ echo -e "\n # Welcome to the Mine-CLI installer.\n"
 sleep 1
 
 # Check for java 8 installation
-grn "=============================="
+grn  "=============================="
 echo "        Java installer"
-grn "=============================="
+grn  "=============================="
 echo "Checking for Java..."
 
 if which java > /dev/null 2>&1; then
@@ -167,10 +223,10 @@ set_env_var
 grn "Java 8 has been successfully installed and environment variables are set!\n"
 
 # Server jar installer
-grn "================================"
+grn  "================================"
 echo "        Server installer"
-grn "================================"
+grn  "================================"
 select_version
 
-echo "One of the following server jar files will be installed."
+echo -e "\nOne of the following server jar files will be installed."
 echo " [1] "

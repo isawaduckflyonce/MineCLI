@@ -1,29 +1,6 @@
 #!/bin/bash
 
 MC_SERVER=""
-MC_VERSION=""
-
-#Minecraft versions
-versions="\
- 1.0.0 1.0.1\
- 1.1.0\
- 1.2.1 1.2.2 1.2.3 1.2.4 1.2.5\
- 1.3.1 1.3.2\
- 1.4.2 1.4.4 1.4.5 1.4.6 1.4.7\
- 1.5 1.5.1 1.5.2\
- 1.6.1 1.6.2 1.6.4\
- 1.7.2 1.7.4 1.7.5 1.7.6 1.7.7 1.7.8 1.7.9 1.7.10\
- 1.8 1.8.1 1.8.2 1.8.3 1.8.4 1.8.5 1.8.6 1.8.7 1.8.8 1.8.9\
- 1.9 1.9.1 1.9.2 1.9.3 1.9.4\
- 1.10 1.10.1 1.10.2\
- 1.11 1.11.1 1.11.2\
- 1.12 1.12.1 1.12.2 "
-
-versions_extra="\
- 1.13 1.13.1 1.13.2\
- 1.14 1.14.1 1.14.2 1.14.3 1.14.4\
- 1.15 1.15.1 1.15.2\
- 1.16 1.16.1 1.16.2 1.16.3 1.16.4 1.16.5 "
 
 # Colored output
 RED='\033[0;31m'
@@ -32,6 +9,7 @@ YLW='\033[1;33m'
 BLU='\033[0;34m'
 RST='\033[0m'
 
+### COLORED OUTPUT ###
 function red() {
   echo -e "${RED}$1${RST}"
 }
@@ -44,8 +22,9 @@ function ylw() {
 function blu() {
   echo -e "${BLU}$1${RST}"
 }
+######################
 
-# Java installation
+### Java installation ###
 function install_java() {
   echo "Options:"
   echo " [Y] Install 'openjdk-8-jre' *"
@@ -58,7 +37,7 @@ function install_java() {
     case "$choice" in
       y|Y )
         grn "Installing..."
-        sudo apt install openjdk-8-jre -y > /dev/null 2>&1
+        sudo apt install openjdk-8-jre -y > /dev/null 2>&1 || ( echo "Installation failed, exiting." && exit 1 )
         break
         ;;
       n|N )
@@ -113,7 +92,9 @@ function set_env_var() {
     done
   fi
 }
+#########################
 
+### Server installation ###
 # Select server type
 function select_type() {
   echo "Please choose the type of server you'd like to install:"
@@ -127,6 +108,7 @@ function select_type() {
     read -rp "Enter the number corresponding to your choice (1-5): " choice
     choice=${choice:-1}
 
+    echo
     case "$choice" in
       1 )
         grn "You selected the Vanilla server."
@@ -173,8 +155,8 @@ function check_version() {
 
   # Check if version exists by matching full version or major version
   found="false"
-  echo "$versions" | grep -E " $input " > /dev/null && found="true"
-  [[ $found = "false" ]] && echo "$versions_extra" | grep -E " $input " > /dev/null && found="true"
+  echo "$VERSIONS" | grep -E " $input " > /dev/null && found="true"
+  [[ $found = "false" ]] && echo "$VERSIONS_EXTRA" | grep -E " $input " > /dev/null && found="true"
 
   if [[ $found = "true" ]] > /dev/null; then
     echo "Version $input found."
@@ -186,56 +168,60 @@ function check_version() {
 }
 
 # Select a valid version
-function select_version() {
+function list_servers() {
+  local servers
+  local i=0
+  servers="$(dirname "${BASH_SOURCE[0]}")/Servers"
+
+  [[ -d "$servers" ]] || {
+    red "Servers directory was not found, aborting."
+    exit 1
+  }
+
+  shopt -s nullglob
+  for version in $(printf '%s\n' "$servers/$1"/*.jar | sort -V); do
+    i=$((i + 1))
+    echo " [$i] $(basename -s .jar "$version")"
+
+    # Save paths to tempfile
+    echo "$version" >> "$2"
+  done
+
+  shopt -u nullglob
+}
+
+function select_server() {
   while true; do
-    read -rp "Select the Minecraft version [1.0 - 1.16]: " version
+    # get user input number from 1 to $1
+    # $( wc -l < "$TMPFILE" ) to get lines
 
-    if [[ $version =~ ^1\.([0-9]+)(\.[0-9]+)?$ ]]; then
-      major=$(echo "$version" | cut -d. -f2)
-      minor=$(echo "$version" | cut -d. -f3)
-
-      # Check if version exists
-      if ! check_version "$major" "$minor"; then
-        continue
-      fi
-
-      if (( major > 12 )); then
-        ylw "Versions above 1.12 are not necessarily supported by Mine-CLI."
-        echo "Recommended versions: 1.7 – 1.12"
-
-        while true; do
-          read -rp "Continue anyway? [y/N]: " choice
-          choice=${choice:-N}
-          case "$choice" in
-            y|Y )
-              MC_VERSION="$version"
-              grn "Selected version: $MC_VERSION"
-              break 2
-              ;;
-            n|N )
-              ylw "Please select another version."
-              break
-              ;;
-            * )
-              ylw "Please enter Y or N."
-              ;;
-          esac
-        done;
-      else
-        MC_VERSION="$version"
-        grn "Selected version: $MC_VERSION"
-        break
-      fi
-    else
-      red "Invalid version format. Example: 1.12.2, 1.9, 1.0.0"
-    fi
+    echo
   done
 }
 
-function install_serer() {
+function select_version() {
+  TMPFILE=$( mktemp )
 
+  echo -e "\nAvailable $MC_SERVER server versions:"
+  case "$MC_SERVER" in
+    "Vanilla")
+      # Listing files
+      list_servers "Vanilla" "$TMPFILE"
+
+      # Selecting server file
+      select_server "$TMPFILE"
+      ;;
+  esac
+
+  rm -f "$TMPFILE"
 }
 
+function install_server() {
+  exit
+}
+###########################
+
+### Program start ###
 clear
 echo
 grn "██████   ██████  ███                                    ████████  █████       █████"

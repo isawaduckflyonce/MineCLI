@@ -1,26 +1,29 @@
 #!/bin/bash
 
+MC_SERVER=""
+MC_VERSION=""
+
 #Minecraft versions
 versions="\
-  1.0.0 1.0.1\
-  1.1.0\
-  1.2.1 1.2.2 1.2.3 1.2.4 1.2.5\
-  1.3.1 1.3.2\
-  1.4.2 1.4.4 1.4.5 1.4.6 1.4.7\
-  1.5 1.5.1 1.5.2\
-  1.6.1 1.6.2 1.6.4\
-  1.7.2 1.7.4 1.7.5 1.7.6 1.7.7 1.7.8 1.7.9 1.7.10\
-  1.8 1.8.1 1.8.2 1.8.3 1.8.4 1.8.5 1.8.6 1.8.7 1.8.8 1.8.9\
-  1.9 1.9.1 1.9.2 1.9.3 1.9.4\
-  1.10 1.10.1 1.10.2\
-  1.11 1.11.1 1.11.2\
-  1.12 1.12.1 1.12.2 "
+ 1.0.0 1.0.1\
+ 1.1.0\
+ 1.2.1 1.2.2 1.2.3 1.2.4 1.2.5\
+ 1.3.1 1.3.2\
+ 1.4.2 1.4.4 1.4.5 1.4.6 1.4.7\
+ 1.5 1.5.1 1.5.2\
+ 1.6.1 1.6.2 1.6.4\
+ 1.7.2 1.7.4 1.7.5 1.7.6 1.7.7 1.7.8 1.7.9 1.7.10\
+ 1.8 1.8.1 1.8.2 1.8.3 1.8.4 1.8.5 1.8.6 1.8.7 1.8.8 1.8.9\
+ 1.9 1.9.1 1.9.2 1.9.3 1.9.4\
+ 1.10 1.10.1 1.10.2\
+ 1.11 1.11.1 1.11.2\
+ 1.12 1.12.1 1.12.2 "
 
 versions_extra="\
-  1.13 1.13.1 1.13.2\
-  1.14 1.14.1 1.14.2 1.14.3 1.14.4\
-  1.15 1.15.1 1.15.2\
-  1.16 1.16.1 1.16.2 1.16.3 1.16.4 1.16.5 "
+ 1.13 1.13.1 1.13.2\
+ 1.14 1.14.1 1.14.2 1.14.3 1.14.4\
+ 1.15 1.15.1 1.15.2\
+ 1.16 1.16.1 1.16.2 1.16.3 1.16.4 1.16.5 "
 
 # Colored output
 RED='\033[0;31m'
@@ -45,7 +48,7 @@ function blu() {
 # Java installation
 function install_java() {
   echo "Options:"
-  echo " [Y] Install 'openjdk-8-jre'"
+  echo " [Y] Install 'openjdk-8-jre' *"
   echo " [N] Do not install (abort)"
   echo " [C] Show the command first"
   while true; do
@@ -109,6 +112,52 @@ function set_env_var() {
       esac
     done
   fi
+}
+
+# Select server type
+function select_type() {
+  echo "Please choose the type of server you'd like to install:"
+  echo " [1] Vanilla server * (Standard Minecraft experience)"
+  echo " [2] Optifine server (Optimized for performance and graphics)"
+  echo " [3] Forge server (For mods and custom content)"
+  echo " [4] Custom server (Advanced users with custom setup)"
+  echo " [5] Skip server download (If you already have a server jar file)"
+
+  while true; do
+    read -rp "Enter the number corresponding to your choice (1-5): " choice
+    choice=${choice:-1}
+
+    case "$choice" in
+      1 )
+        grn "You selected the Vanilla server."
+        MC_SERVER="Vanilla"
+        break
+        ;;
+      2 )
+        grn "You selected the Optifine server."
+        MC_SERVER="Optifine"
+        break
+        ;;
+      3 )
+        grn "You selected the Forge server."
+        MC_SERVER="Forge"
+        break
+        ;;
+      4 )
+        ylw "You selected the Custom server."
+        MC_SERVER="Custom"
+        break
+        ;;
+      5 )
+        ylw "You chose to skip the server download."
+        MC_SERVER="None"
+        break
+        ;;
+      * )
+        echo "Invalid choice, please enter a number between [1-5]. Try again."
+        ;;
+    esac
+  done
 }
 
 # Select minecraft version
@@ -183,6 +232,10 @@ function select_version() {
   done
 }
 
+function install_serer() {
+
+}
+
 clear
 echo
 grn "██████   ██████  ███                                    ████████  █████       █████"
@@ -226,7 +279,7 @@ grn "Java 8 has been successfully installed and environment variables are set!\n
 grn  "================================"
 echo "        Server installer"
 grn  "================================"
+select_type
 select_version
 
-echo -e "\nOne of the following server jar files will be installed."
-echo " [1] "
+install_server

@@ -1,6 +1,7 @@
 #!/bin/bash
 
 MC_SERVER=""
+MC_SERVER_FILE=""
 
 # Colored output
 RED='\033[0;31m'
@@ -170,7 +171,6 @@ function check_version() {
 # Select a valid version
 function list_servers() {
   local servers
-  local i=0
   servers="$(dirname "${BASH_SOURCE[0]}")/Servers"
 
   [[ -d "$servers" ]] || {
@@ -178,7 +178,13 @@ function list_servers() {
     exit 1
   }
 
+  [[ ! "$(ls -A "$servers/$1")" ]] && {
+    red "No files for $1 servers were found, aborting."
+    exit 1
+  }
+
   shopt -s nullglob
+  local i=0
   for version in $(printf '%s\n' "$servers/$1"/*.jar | sort -V); do
     i=$((i + 1))
     echo " [$i] $(basename -s .jar "$version")"
@@ -186,16 +192,31 @@ function list_servers() {
     # Save paths to tempfile
     echo "$version" >> "$2"
   done
-
   shopt -u nullglob
 }
 
 function select_server() {
-  while true; do
-    # get user input number from 1 to $1
-    # $( wc -l < "$TMPFILE" ) to get lines
+  local max
+  max=$( wc -l < "$1" )
+  local choice
 
-    echo
+  while true; do
+    read -rp "Select a server [1-$max]: " choice
+
+    [[ "$choice" =~ ^[0-9]+$ ]] || {
+      ylw "Please enter a valid number."
+      continue
+    }
+
+    (( choice >= 1 && choice <= max )) || {
+      ylw "Please select a number between 1 and $max."
+      continue
+    }
+
+    # Get selected jar path
+    MC_SERVER_FILE=$(head -n "$choice" "$TMPFILE" | tail -n 1)
+    grn "Selected server: $MC_SERVER - $(basename -s .jar "$MC_SERVER_FILE")"
+    break
   done
 }
 

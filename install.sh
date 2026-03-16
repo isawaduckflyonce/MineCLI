@@ -224,7 +224,34 @@ function select_version() {
 }
 
 function install_server() {
-  exit
+  echo "Creating server folder..."
+
+  local FOLDER_PATH
+  FOLDER_PATH="$(dirname "${BASH_SOURCE[0]}")/minecraft/$MC_SERVER-$(basename -s .jar "$MC_SERVER_FILE")"
+  local i=0
+
+  [[ -d "$FOLDER_PATH" ]] && ylw "A server of the same type and version already exists."
+
+  while [[ -d "$FOLDER_PATH" ]]; do
+    i=$(( i + 1 ))
+    FOLDER_PATH="$(dirname "${BASH_SOURCE[0]}")/minecraft/$MC_SERVER-$(basename -s .jar "$MC_SERVER_FILE")($i)"
+  done
+
+  mkdir -p "$FOLDER_PATH"
+  grn "Server folder created successfully, you can find it at '$FOLDER_PATH'"
+
+  cp "$MC_SERVER_FILE" "$FOLDER_PATH/$(basename "$MC_SERVER_FILE")"
+  grn "Server jar file moved to '$FOLDER_PATH'"
+
+  # Start script for the server
+  # TODO: Ask user for launch args.
+  cat > "$FOLDER_PATH/start.sh" << 'EOF'
+#!/bin/bash
+java -Xmx2G -Xms1G -jar server.jar nogui
+EOF
+
+  chmod u+x "$FOLDER_PATH/start.sh"
+  grn "Start script created at '$FOLDER_PATH/start.sh'."
 }
 ###########################
 

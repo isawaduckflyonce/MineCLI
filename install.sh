@@ -245,10 +245,8 @@ function install_server() {
 
   # Start script for the server
   # TODO: Ask user for launch args.
-  cat > "$FOLDER_PATH/start.sh" << 'EOF'
-#!/bin/bash
-java -Xmx2G -Xms1G -jar server.jar nogui
-EOF
+  touch "$FOLDER_PATH/start.sh"
+  cat "./data/start.sh" > "$FOLDER_PATH/start.sh"
 
   chmod u+x "$FOLDER_PATH/start.sh"
   grn "Start script created at '$FOLDER_PATH/start.sh'."
